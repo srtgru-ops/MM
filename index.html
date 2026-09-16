@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>نظام مركز محترف</title>
+<style>
+:root{--cyan:#3db2c7;--gray:#929398;--ink:#2f3740;--bg:#f5f8fa;--white:#fff;--line:#e5ecef;--shadow:0 12px 32px rgba(36,58,68,.08)}
+*{box-sizing:border-box} body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{height:78px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:14px}.brand img{height:58px;width:95px;object-fit:contain}.brand b{font-size:19px}.brand small{display:block;color:#8a949a;margin-top:5px}
+.menuBtn{border:0;background:#eef8fa;color:var(--cyan);font-size:26px;width:48px;height:48px;border-radius:14px;cursor:pointer}
+.sidebar{position:fixed;right:-340px;top:0;width:320px;height:100vh;background:#fff;z-index:50;box-shadow:-10px 0 40px rgba(0,0,0,.12);transition:.25s;padding:22px}.sidebar.open{right:0}.sideHead{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:18px}.close{border:0;background:#f3f5f6;border-radius:10px;font-size:22px;cursor:pointer}.nav button{width:100%;text-align:right;border:0;background:transparent;padding:14px 13px;border-radius:12px;margin:4px 0;cursor:pointer;font-size:15px}.nav button:hover,.nav button.active{background:#eaf8fa;color:#188ca1}.overlay{display:none;position:fixed;inset:0;background:rgba(20,30,35,.25);z-index:40}.overlay.show{display:block}
+main{max-width:1400px;margin:auto;padding:30px}.hero{background:linear-gradient(135deg,#fff,#eefafd);border:1px solid #dceff2;border-radius:22px;padding:26px;box-shadow:var(--shadow);display:flex;justify-content:space-between;align-items:center;gap:20px}.hero h1{margin:0 0 8px;font-size:27px}.hero p{margin:0;color:#77838a}.pill{background:#fff;border:1px solid #dceff2;padding:10px 15px;border-radius:999px;color:#168ca1;font-weight:bold}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:22px 0}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow)}.card .label{color:#7b878e;font-size:13px}.card .num{font-size:30px;font-weight:700;margin-top:10px;color:#2d3a40}.card.accent .num{color:var(--cyan)}
+.panel{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;margin-top:20px}.panelHead{padding:19px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:15px}.panelHead h2{font-size:18px;margin:0}.tools{display:flex;gap:9px;flex-wrap:wrap}.tools input,.tools select{border:1px solid #dce3e6;border-radius:10px;padding:10px 12px;background:#fff}.refresh{border:0;background:var(--cyan);color:#fff;border-radius:10px;padding:10px 15px;cursor:pointer}
+.tableWrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:14px 16px;border-bottom:1px solid #edf1f2;text-align:right;white-space:nowrap}th{background:#fafcfc;color:#66757c;font-size:13px}td{font-size:14px}.empty{text-align:center!important;color:#929da2;padding:45px!important}.tag{display:inline-block;background:#eaf8fa;color:#168ca1;padding:6px 10px;border-radius:999px;font-size:12px}
+.view{display:none}.view.active{display:block}.formTitle{display:flex;align-items:center;gap:10px}.dot{width:11px;height:11px;background:var(--cyan);border-radius:50%}.notice{padding:13px 16px;background:#fff8df;color:#826d22;border:1px solid #f3e4a6;border-radius:12px;margin:16px 0;font-size:13px}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}main{padding:18px}.hero{align-items:flex-start;flex-direction:column}.brand b{font-size:16px}}
+@media(max-width:520px){.cards{grid-template-columns:1fr}.brand small{display:none}.brand img{width:78px}header{padding:0 16px}}
+</style>
+</head>
+<body>
+<header><div class="brand"><img src="assets/logo.jpeg" alt="شعار محترف"><div><b>نظام إدارة مركز محترف</b><small>لوحة متابعة التسجيل والبرامج</small></div></div><button class="menuBtn" onclick="toggleMenu()">☰</button></header>
+<div class="overlay" id="overlay" onclick="toggleMenu(false)"></div>
+<aside class="sidebar" id="sidebar"><div class="sideHead"><strong>القائمة</strong><button class="close" onclick="toggleMenu(false)">×</button></div><div class="nav" id="nav"></div></aside>
+<main>
+<section id="home" class="view active">
+<div class="hero"><div><h1>لوحة مركز محترف</h1><p>ملخص موحد لبيانات التسجيل القادمة من نماذج المركز.</p></div><div class="pill" id="lastUpdate">جاهز للربط</div></div>
+<div class="cards"><div class="card accent"><div class="label">إجمالي المسجلين</div><div class="num" id="totalAll">0</div></div><div class="card"><div class="label">من منطقة الحدود الشمالية</div><div class="num" id="northCount">0</div></div><div class="card"><div class="label">من جامعة الحدود الشمالية</div><div class="num" id="northernUniCount">0</div></div><div class="card"><div class="label">من جامعة تبوك</div><div class="num" id="tabukUniCount">0</div></div></div>
+<div class="panel"><div class="panelHead"><h2>ملخص النماذج</h2><button class="refresh" onclick="loadAll()">تحديث البيانات</button></div><div class="tableWrap"><table><thead><tr><th>النموذج</th><th>عدد المسجلين</th><th>آخر تحديث</th><th>الحالة</th></tr></thead><tbody id="summaryBody"></tbody></table></div></div>
+</section>
+<div id="formViews"></div>
+</main>
+<script>
+// ضع رابط Web App لكل Google Sheet هنا بعد نشر Apps Script.
+const FORMS = [
+ {id:'ebdaa', name:'نموذج اختبارات مركز محترف – إبداع', api:''},
+ {id:'form2', name:'النموذج الثاني', api:''},
+ {id:'form3', name:'النموذج الثالث', api:''},
+ {id:'form4', name:'النموذج الرابع', api:''}
+];
+let datasets={};
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+function toggleMenu(force){let s=document.getElementById('sidebar'),o=document.getElementById('overlay');let open=force===undefined?!s.classList.contains('open'):force;s.classList.toggle('open',open);o.classList.toggle('show',open)}
+function init(){const nav=document.getElementById('nav');nav.innerHTML=`<button class="active" onclick="showView('home',this)">⌂ الصفحة الرئيسية</button>`+FORMS.map(f=>`<button onclick="showView('${f.id}',this)">▦ ${esc(f.name)}</button>`).join('');
+ document.getElementById('formViews').innerHTML=FORMS.map(f=>`<section id="${f.id}" class="view"><div class="hero"><div><div class="formTitle"><span class="dot"></span><h1>${esc(f.name)}</h1></div><p>بيانات المسجلين القادمة من Google Form / Google Sheet.</p></div><div class="pill" id="count-${f.id}">0 مسجل</div></div><div class="notice" id="notice-${f.id}">لم يتم ربط رابط Google Apps Script لهذا النموذج حتى الآن.</div><div class="panel"><div class="panelHead"><h2>المسجلون</h2><div class="tools"><input id="search-${f.id}" placeholder="بحث بالاسم أو الجوال أو الجهة" oninput="renderForm('${f.id}')"><select id="filter-${f.id}" onchange="renderForm('${f.id}')"><option value="">كل الجهات</option></select><button class="refresh" onclick="loadForm('${f.id}')">تحديث</button></div></div><div class="tableWrap"><table><thead id="head-${f.id}"></thead><tbody id="body-${f.id}"><tr><td class="empty">بانتظار ربط Google Sheet</td></tr></tbody></table></div></div></section>`).join('');loadAll();}
+function showView(id,btn){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');toggleMenu(false);if(id!=='home')loadForm(id)}
+async function loadForm(id){const f=FORMS.find(x=>x.id===id);if(!f.api){datasets[id]=[];renderForm(id);return []}try{const r=await fetch(f.api,{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const j=await r.json();datasets[id]=Array.isArray(j)?j:(j.data||[]);document.getElementById('notice-'+id).style.display='none';renderForm(id);return datasets[id]}catch(e){document.getElementById('notice-'+id).textContent='تعذر جلب البيانات: '+e.message;document.getElementById('notice-'+id).style.display='block';return []}}
+function renderForm(id){let rows=datasets[id]||[];const search=(document.getElementById('search-'+id)?.value||'').trim().toLowerCase();const filter=document.getElementById('filter-'+id);const keys=rows.length?Object.keys(rows[0]):['الاسم','رقم الجوال','البريد الإلكتروني','الجهة','المنطقة','تاريخ التسجيل'];let agencyKey=keys.find(k=>/الجهة|الجامعة|جهة|جامعة/i.test(k));if(filter&&agencyKey){let old=filter.value, vals=[...new Set(rows.map(r=>r[agencyKey]).filter(Boolean))];filter.innerHTML='<option value="">كل الجهات</option>'+vals.map(v=>`<option>${esc(v)}</option>`).join('');filter.value=old}let filtered=rows.filter(r=>(!search||Object.values(r).join(' ').toLowerCase().includes(search))&&(!filter?.value||String(r[agencyKey]||'')===filter.value));document.getElementById('count-'+id).textContent=rows.length+' مسجل';document.getElementById('head-'+id).innerHTML='<tr>'+keys.map(k=>`<th>${esc(k)}</th>`).join('')+'</tr>';document.getElementById('body-'+id).innerHTML=filtered.length?filtered.map(r=>'<tr>'+keys.map(k=>`<td>${esc(r[k])}</td>`).join('')+'</tr>').join(''):`<tr><td colspan="${keys.length}" class="empty">لا توجد بيانات مطابقة</td></tr>`}
+function matchCount(rows,terms){return rows.filter(r=>{let s=Object.values(r).join(' ').toLowerCase();return terms.some(t=>s.includes(t))}).length}
+async function loadAll(){await Promise.all(FORMS.map(f=>loadForm(f.id)));let all=Object.values(datasets).flat();document.getElementById('totalAll').textContent=all.length;document.getElementById('northCount').textContent=matchCount(all,['الحدود الشمالية','northern borders']);document.getElementById('northernUniCount').textContent=matchCount(all,['جامعة الحدود الشمالية','northern border university','northern borders university']);document.getElementById('tabukUniCount').textContent=matchCount(all,['جامعة تبوك','university of tabuk']);document.getElementById('lastUpdate').textContent='آخر تحديث: '+new Date().toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});document.getElementById('summaryBody').innerHTML=FORMS.map(f=>`<tr><td>${esc(f.name)}</td><td>${(datasets[f.id]||[]).length}</td><td>${new Date().toLocaleDateString('ar-SA')}</td><td><span class="tag">${f.api?'مرتبط':'بانتظار الربط'}</span></td></tr>`).join('')}
+init();
+</script>
+</body></html>
