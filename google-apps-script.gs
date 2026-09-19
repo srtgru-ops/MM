@@ -1,22 +1,66 @@
 /**
- * ضع هذا الكود داخل Apps Script المرتبط بـ Google Sheet.
- * ثم Deploy > New deployment > Web app
- * Execute as: Me
- * Who has access: حسب سياسة الوصول المناسبة لبياناتك.
+ * ربط لوحة مركز محترف بأربعة Google Sheets من خلال Apps Script واحد.
+ * ضع معرّف كل ملف أدناه، ثم انشر السكربت Web app بصلاحية Anyone.
  */
+const SOURCES = {
+  free: {
+    spreadsheetId: "1tJ0te9q7cpGVI5_drEvbmJINg9OVa_wxeCtTiOvkvsQ",
+    sheetName: "",
+  },
+  ibta: { spreadsheetId: "ضع_معرف_شيت_IBTA", sheetName: "" },
+  pm: { spreadsheetId: "ضع_معرف_شيت_CBP_PM", sheetName: "" },
+  osha: { spreadsheetId: "ضع_معرف_شيت_OSHA", sheetName: "" },
+};
+
 function doGet() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-  const values = sheet.getDataRange().getDisplayValues();
-  if (values.length < 2) return json_([]);
-  const headers = values[0].map(String);
-  const rows = values.slice(1).filter(r => r.some(v => v !== '')).map(row => {
-    const obj = {};
-    headers.forEach((h, i) => obj[h || ('عمود ' + (i + 1))] = row[i] || '');
-    return obj;
-  });
-  return json_(rows);
+  try {
+    const forms = {};
+    Object.keys(SOURCES).forEach(function (id) {
+      forms[id] = readSource_(SOURCES[id]);
+    });
+    return json_({
+      success: true,
+      forms: forms,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    return json_({
+      success: false,
+      error: String((error && error.message) || error),
+    });
+  }
 }
-function json_(data) {
-  return ContentService.createTextOutput(JSON.stringify({data:data}))
-    .setMimeType(ContentService.MimeType.JSON);
+
+function readSource_(source) {
+  const file = SpreadsheetApp.openById(source.spreadsheetId);
+  const sheet = source.sheetName
+    ? file.getSheetByName(source.sheetName)
+    : file.getSheets()[0];
+  if (!sheet)
+    throw new Error("تعذر العثور على ورقة العمل: " + source.sheetName);
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length < 2) return [];
+  const headers = values[0].map(function (value, index) {
+    return String(value || "عمود " + (index + 1)).trim();
+  });
+  return values
+    .slice(1)
+    .filter(function (row) {
+      return row.some(function (value) {
+        return value !== "";
+      });
+    })
+    .map(function (row) {
+      const item = {};
+      headers.forEach(function (header, index) {
+        item[header] = row[index] || "";
+      });
+      return item;
+    });
+}
+
+function json_(payload) {
+  return ContentService.createTextOutput(JSON.stringify(payload)).setMimeType(
+    ContentService.MimeType.JSON,
+  );
 }
