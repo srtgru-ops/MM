@@ -346,12 +346,6 @@
         background: #eef9fb;
         color: #168ca1;
       }
-      .followCheck {
-        width: 19px;
-        height: 19px;
-        accent-color: #22a7bd;
-        cursor: pointer;
-      }
       .paymentSelect {
         min-width: 125px;
         padding: 8px 10px;
@@ -359,6 +353,25 @@
         border-radius: 10px;
         background: #fff;
         color: var(--ink);
+      }
+      .noteInput {
+        min-width: 230px;
+        padding: 9px 11px;
+        border: 1px solid #dce6e8;
+        border-radius: 10px;
+        background: #fff;
+      }
+      .saveNoteBtn {
+        border: 1px solid #dccfb9;
+        background: #fff;
+        color: var(--ink);
+        padding: 8px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .saveNoteBtn:hover {
+        background: #f7fbfc;
+        border-color: #65c6d6;
       }
       .view {
         display: none;
@@ -851,7 +864,7 @@
         views.innerHTML = forms
           .map(
             (f) =>
-              `<section id="${f.id}" class="view"><div class="viewHero"><div><h1>${esc(f.name)}</h1><p>بيانات المسجلين في النموذج</p></div><div class="bigCount">${f.count} مسجل</div></div><div class="notice">هذا القسم مرتبط مباشرة بـ Google Sheets ويتم تحديثه تلقائيًا.</div><div class="miniStats"><div class="miniStat"><small>إجمالي المسجلين</small><b>${f.rows.length}</b></div><div class="miniStat"><small>جامعة الحدود الشمالية</small><b>${f.rows.filter((r) => r.join(" ").includes("جامعة الحدود الشمالية")).length}</b></div><div class="miniStat"><small>جامعة تبوك</small><b>${f.rows.filter((r) => r.join(" ").includes("جامعة تبوك")).length}</b></div></div><div class="panel"><div class="panelHead"><h2>المسجلون</h2><div class="tools"><input id="q-${f.id}" placeholder="بحث في البيانات" oninput="render('${f.id}')"><select id="u-${f.id}" onchange="render('${f.id}')"><option value="">كل الجامعات / الجهات</option><option>جامعة الحدود الشمالية</option><option>جامعة تبوك</option><option value="__other__">جامعات أخرى</option></select><button class="exportBtn" onclick="exportExcel('${f.id}')">⇩ تصدير Excel</button></div></div><div class="tableWrap"><table><thead><tr>${f.cols.map((c) => `<th>${esc(c)}</th>`).join("")}<th>تم التواصل</th><th>تم تأكيد الدفع</th><th>طريقة الدفع</th></tr></thead><tbody id="b-${f.id}"></tbody></table></div></div></section>`,
+              `<section id="${f.id}" class="view"><div class="viewHero"><div><h1>${esc(f.name)}</h1><p>بيانات المسجلين في النموذج</p></div><div class="bigCount">${f.count} مسجل</div></div><div class="notice">هذا القسم مرتبط مباشرة بـ Google Sheets ويتم تحديثه تلقائيًا.</div><div class="miniStats"><div class="miniStat"><small>إجمالي المسجلين</small><b>${f.rows.length}</b></div><div class="miniStat"><small>جامعة الحدود الشمالية</small><b>${f.rows.filter((r) => r.join(" ").includes("جامعة الحدود الشمالية")).length}</b></div><div class="miniStat"><small>جامعة تبوك</small><b>${f.rows.filter((r) => r.join(" ").includes("جامعة تبوك")).length}</b></div></div><div class="panel"><div class="panelHead"><h2>المسجلون</h2><div class="tools"><input id="q-${f.id}" placeholder="بحث في البيانات" oninput="render('${f.id}')"><select id="u-${f.id}" onchange="render('${f.id}')"><option value="">كل الجامعات / الجهات</option><option>جامعة الحدود الشمالية</option><option>جامعة تبوك</option><option value="__other__">جامعات أخرى</option></select><button class="exportBtn" onclick="exportExcel('${f.id}')">⇩ تصدير Excel</button></div></div><div class="tableWrap"><table><thead><tr>${f.cols.map((c) => `<th>${esc(c)}</th>`).join("")}<th>حالة التواصل</th><th>طريقة الدفع</th><th>الملاحظات</th><th>حفظ</th></tr></thead><tbody id="b-${f.id}"></tbody></table></div></div></section>`,
           )
           .join("");
         forms.forEach((f) => render(f.id));
@@ -886,18 +899,18 @@
       function getTracking(formId, row) {
         return (
           registrationTracking[registrationKey(formId, row)] || {
-            contacted: false,
-            paymentConfirmed: false,
+            communicationStatus: "جديد",
             paymentMethod: "",
+            note: "",
           }
         );
       }
       function updateTracking(formId, encodedKey, field, value) {
         const key = decodeURIComponent(encodedKey);
         const current = registrationTracking[key] || {
-          contacted: false,
-          paymentConfirmed: false,
+          communicationStatus: "جديد",
           paymentMethod: "",
+          note: "",
         };
         current[field] = value;
         registrationTracking[key] = current;
@@ -905,6 +918,15 @@
           TRACKING_STORAGE_KEY,
           JSON.stringify(registrationTracking),
         );
+      }
+      function saveNote(formId, encodedKey, button) {
+        const input = button
+          .closest("td")
+          .previousElementSibling.querySelector(".noteInput");
+        updateTracking(formId, encodedKey, "note", input.value.trim());
+        const original = button.textContent;
+        button.textContent = "تم الحفظ";
+        setTimeout(() => (button.textContent = original), 1200);
       }
       function render(id) {
         let f = forms.find((x) => x.id === id),
@@ -915,7 +937,22 @@
               .map((r) => {
                 const tracking = getTracking(id, r);
                 const key = encodeURIComponent(registrationKey(id, r));
-                const options = ["", "أقساط", "مكافأة", "تحويل", "تمارا"]
+                const communicationStatus =
+                  tracking.communicationStatus ||
+                  (tracking.contacted ? "تم التواصل" : "جديد");
+                const statusOptions = [
+                  "جديد",
+                  "تم التواصل",
+                  "مؤجل",
+                  "لا يرد",
+                  "غير مهتم",
+                ]
+                  .map(
+                    (status) =>
+                      `<option value="${status}" ${communicationStatus === status ? "selected" : ""}>${status}</option>`,
+                  )
+                  .join("");
+                const options = ["", "أقساط", "مكافأة", "تحويل بنكي", "تمارا"]
                   .map(
                     (method) =>
                       `<option value="${method}" ${tracking.paymentMethod === method ? "selected" : ""}>${method || "اختر طريقة الدفع"}</option>`,
@@ -929,14 +966,15 @@
                         `<td>${i === 3 && /جامعة/.test(v) ? `<span class="uni">${esc(v)}</span>` : esc(v)}</td>`,
                     )
                     .join("") +
-                  `<td><input class="followCheck" type="checkbox" aria-label="تم التواصل" ${tracking.contacted ? "checked" : ""} onchange="updateTracking('${id}','${key}','contacted',this.checked)"></td>` +
-                  `<td><input class="followCheck" type="checkbox" aria-label="تم تأكيد الدفع" ${tracking.paymentConfirmed ? "checked" : ""} onchange="updateTracking('${id}','${key}','paymentConfirmed',this.checked)"></td>` +
+                  `<td><select class="paymentSelect" aria-label="حالة التواصل" onchange="updateTracking('${id}','${key}','communicationStatus',this.value)">${statusOptions}</select></td>` +
                   `<td><select class="paymentSelect" onchange="updateTracking('${id}','${key}','paymentMethod',this.value)">${options}</select></td>` +
+                  `<td><input class="noteInput" type="text" value="${esc(tracking.note || "")}" placeholder="اكتب ملاحظة..."></td>` +
+                  `<td><button class="saveNoteBtn" onclick="saveNote('${id}','${key}',this)">حفظ</button></td>` +
                   "</tr>"
                 );
               })
               .join("")
-          : `<tr><td colspan="${f.cols.length + 3}" class="empty">لا توجد تسجيلات مطابقة للفلترة الحالية</td></tr>`;
+          : `<tr><td colspan="${f.cols.length + 4}" class="empty">لا توجد تسجيلات مطابقة للفلترة الحالية</td></tr>`;
       }
       function duplicateCount() {
         let seen = new Set(),
@@ -992,9 +1030,9 @@
         let title = f.name + " - " + filter + (q ? " - بحث: " + q : "");
         const exportCols = [
           ...f.cols,
-          "تم التواصل",
-          "تم تأكيد الدفع",
+          "حالة التواصل",
           "طريقة الدفع",
+          "الملاحظات",
         ];
         let table =
           '<table border="1"><tr><th colspan="' +
@@ -1007,11 +1045,14 @@
           rows
             .map((r) => {
               const tracking = getTracking(id, r);
+              const communicationStatus =
+                tracking.communicationStatus ||
+                (tracking.contacted ? "تم التواصل" : "جديد");
               const exportRow = [
                 ...r,
-                tracking.contacted ? "نعم" : "لا",
-                tracking.paymentConfirmed ? "نعم" : "لا",
+                communicationStatus,
                 tracking.paymentMethod,
+                tracking.note || "",
               ];
               return (
                 "<tr>" +
