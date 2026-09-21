@@ -660,7 +660,21 @@
       </section>
       <div id="views"></div>
     </main>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyCqaUnGOefXRotSIfC7kdDMXkLKMbK7z1o",
+        authDomain: "mohteref-registration-monitor.firebaseapp.com",
+        projectId: "mohteref-registration-monitor",
+        storageBucket: "mohteref-registration-monitor.firebasestorage.app",
+        messagingSenderId: "659379127241",
+        appId: "1:659379127241:web:7b8ffe68494c5c0aecde18",
+        measurementId: "G-5YRH8JL579",
+      };
+      firebase.initializeApp(firebaseConfig);
+      const firestoreDb = firebase.firestore();
+      const trackingCollection = firestoreDb.collection("registrationTracking");
       const API_URL =
         "https://script.google.com/macros/s/AKfycbxI8hyhea3nFhLVMdgjd438hUCsrsPtMkv0d2Zgt7lStRnknFJ_Zea-H4GCgDbknAv-7Q/exec";
       const forms = [
@@ -917,6 +931,43 @@
         localStorage.setItem(
           TRACKING_STORAGE_KEY,
           JSON.stringify(registrationTracking),
+        );
+        trackingCollection
+          .doc(encodedKey)
+          .set(
+            {
+              registrationKey: key,
+              formId,
+              [field]: value,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          )
+          .catch((error) =>
+            console.error("تعذر حفظ بيانات المتابعة في Firebase", error),
+          );
+      }
+      function subscribeFirebaseTracking() {
+        trackingCollection.onSnapshot(
+          (snapshot) => {
+            snapshot.forEach((documentSnapshot) => {
+              const data = documentSnapshot.data();
+              const key =
+                data.registrationKey || decodeURIComponent(documentSnapshot.id);
+              registrationTracking[key] = {
+                ...(registrationTracking[key] || {}),
+                ...data,
+              };
+            });
+            localStorage.setItem(
+              TRACKING_STORAGE_KEY,
+              JSON.stringify(registrationTracking),
+            );
+            forms.forEach((form) => {
+              if (document.getElementById("b-" + form.id)) render(form.id);
+            });
+          },
+          (error) => console.error("تعذر مزامنة Firebase", error),
         );
       }
       function saveNote(formId, encodedKey, button) {
@@ -1202,6 +1253,7 @@
         document.getElementById("dupCount").textContent = duplicateCount();
       }
       init();
+      subscribeFirebaseTracking();
       document.getElementById("dupCount").textContent = duplicateCount();
       loadAllSheets();
       setInterval(loadAllSheets, 20000);
