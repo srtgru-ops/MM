@@ -4,7 +4,7 @@
  */
 const SOURCES = {
   free: {
-    spreadsheetId: "1tJ0te9q7cpGVI5_drEvbmJINg9OVa_wxeCtTiOvkvsQ",
+    spreadsheetId: "1ZcKMPrFL9rFl3B254yfnHTR-weijkR5UPijSlM00J14",
     sheetName: "",
   },
   ibta: { spreadsheetId: "ضع_معرف_شيت_IBTA", sheetName: "" },
@@ -16,7 +16,13 @@ function doGet() {
   try {
     const forms = {};
     Object.keys(SOURCES).forEach(function (id) {
-      forms[id] = readSource_(SOURCES[id]);
+      const source = SOURCES[id];
+      // يسمح بتوصيل النماذج بالتدريج، ويتجاوز المعرفات التي لم تُضف بعد.
+      if (!source.spreadsheetId || source.spreadsheetId.indexOf("ضع_") === 0) {
+        forms[id] = [];
+        return;
+      }
+      forms[id] = readSource_(source);
     });
     return json_({
       success: true,

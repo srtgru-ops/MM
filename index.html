@@ -174,6 +174,24 @@
         font-weight: bold;
         z-index: 2;
       }
+      .firebaseMode {
+        background: #fff;
+        border: 1px solid #d9eef2;
+        border-radius: 999px;
+        padding: 11px 16px;
+        color: #7b8790;
+        font-weight: bold;
+        white-space: nowrap;
+      }
+      .firebaseMode.connected {
+        color: #168ca1;
+        border-color: #bfe5ec;
+      }
+      .firebaseMode.error {
+        color: #b54747;
+        border-color: #f0caca;
+        background: #fff8f8;
+      }
       .kpis {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -878,7 +896,7 @@
         views.innerHTML = forms
           .map(
             (f) =>
-              `<section id="${f.id}" class="view"><div class="viewHero"><div><h1>${esc(f.name)}</h1><p>بيانات المسجلين في النموذج</p></div><div class="bigCount">${f.count} مسجل</div></div><div class="notice">هذا القسم مرتبط مباشرة بـ Google Sheets ويتم تحديثه تلقائيًا.</div><div class="miniStats"><div class="miniStat"><small>إجمالي المسجلين</small><b>${f.rows.length}</b></div><div class="miniStat"><small>جامعة الحدود الشمالية</small><b>${f.rows.filter((r) => r.join(" ").includes("جامعة الحدود الشمالية")).length}</b></div><div class="miniStat"><small>جامعة تبوك</small><b>${f.rows.filter((r) => r.join(" ").includes("جامعة تبوك")).length}</b></div></div><div class="panel"><div class="panelHead"><h2>المسجلون</h2><div class="tools"><input id="q-${f.id}" placeholder="بحث في البيانات" oninput="render('${f.id}')"><select id="u-${f.id}" onchange="render('${f.id}')"><option value="">كل الجامعات / الجهات</option><option>جامعة الحدود الشمالية</option><option>جامعة تبوك</option><option value="__other__">جامعات أخرى</option></select><button class="exportBtn" onclick="exportExcel('${f.id}')">⇩ تصدير Excel</button></div></div><div class="tableWrap"><table><thead><tr>${f.cols.map((c) => `<th>${esc(c)}</th>`).join("")}<th>حالة التواصل</th><th>طريقة الدفع</th><th>الملاحظات</th><th>حفظ</th></tr></thead><tbody id="b-${f.id}"></tbody></table></div></div></section>`,
+              `<section id="${f.id}" class="view"><div class="viewHero"><div><h1>${esc(f.name)}</h1><p>بيانات المسجلين في النموذج</p></div><div><div class="bigCount">${f.count} مسجل</div><div id="firebase-status-${f.id}" class="firebaseMode">● جارٍ فحص Firebase</div></div></div><div class="notice">هذا القسم مرتبط مباشرة بـ Google Sheets ويتم تحديثه تلقائيًا.</div><div class="miniStats"><div class="miniStat"><small>إجمالي المسجلين</small><b>${f.rows.length}</b></div><div class="miniStat"><small>جامعة الحدود الشمالية</small><b>${f.rows.filter((r) => r.join(" ").includes("جامعة الحدود الشمالية")).length}</b></div><div class="miniStat"><small>جامعة تبوك</small><b>${f.rows.filter((r) => r.join(" ").includes("جامعة تبوك")).length}</b></div></div><div class="panel"><div class="panelHead"><h2>المسجلون</h2><div class="tools"><input id="q-${f.id}" placeholder="بحث في البيانات" oninput="render('${f.id}')"><select id="u-${f.id}" onchange="render('${f.id}')"><option value="">كل الجامعات / الجهات</option><option>جامعة الحدود الشمالية</option><option>جامعة تبوك</option><option value="__other__">جامعات أخرى</option></select><button class="exportBtn" onclick="exportExcel('${f.id}')">⇩ تصدير Excel</button></div></div><div class="tableWrap"><table><thead><tr>${f.cols.map((c) => `<th>${esc(c)}</th>`).join("")}<th>حالة التواصل</th><th>طريقة الدفع</th><th>الملاحظات</th><th>حفظ</th></tr></thead><tbody id="b-${f.id}"></tbody></table></div></div></section>`,
           )
           .join("");
         forms.forEach((f) => render(f.id));
@@ -943,13 +961,27 @@
             },
             { merge: true },
           )
-          .catch((error) =>
-            console.error("تعذر حفظ بيانات المتابعة في Firebase", error),
-          );
+          .then(() => setFirebaseStatus(true))
+          .catch((error) => {
+            setFirebaseStatus(false);
+            console.error("تعذر حفظ بيانات المتابعة في Firebase", error);
+          });
+      }
+      function setFirebaseStatus(connected) {
+        forms.forEach((form) => {
+          const badge = document.getElementById("firebase-status-" + form.id);
+          if (!badge) return;
+          badge.textContent = connected
+            ? "● متصل ومحدّث الآن"
+            : "● تعذر الاتصال بـ Firebase";
+          badge.classList.toggle("connected", connected);
+          badge.classList.toggle("error", !connected);
+        });
       }
       function subscribeFirebaseTracking() {
         trackingCollection.onSnapshot(
           (snapshot) => {
+            setFirebaseStatus(true);
             snapshot.forEach((documentSnapshot) => {
               const data = documentSnapshot.data();
               const key =
@@ -967,7 +999,10 @@
               if (document.getElementById("b-" + form.id)) render(form.id);
             });
           },
-          (error) => console.error("تعذر مزامنة Firebase", error),
+          (error) => {
+            setFirebaseStatus(false);
+            console.error("تعذر مزامنة Firebase", error);
+          },
         );
       }
       function saveNote(formId, encodedKey, button) {
