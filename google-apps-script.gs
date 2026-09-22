@@ -7,7 +7,10 @@ const SOURCES = {
     spreadsheetId: "1ZcKMPrFL9rFl3B254yfnHTR-weijkR5UPijSlM00J14",
     sheetName: "",
   },
-  ibta: { spreadsheetId: "ضع_معرف_شيت_IBTA", sheetName: "" },
+  ibta: {
+    spreadsheetId: "1LD-MRidAsYIjj3ffuXi-SA1tIZRnpxaLo91X75VLOoQ",
+    sheetName: "",
+  },
   pm: { spreadsheetId: "ضع_معرف_شيت_CBP_PM", sheetName: "" },
   osha: { spreadsheetId: "ضع_معرف_شيت_OSHA", sheetName: "" },
 };
