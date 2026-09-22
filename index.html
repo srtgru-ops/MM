@@ -700,11 +700,11 @@
         },
         {
           ids: ["pm"],
-          url: "https://script.google.com/macros/s/AKfycbyMLK0vvT9NJZZXw58M5B_y74r5Vob4qSohx5ak_l8dpgVA-GdX4CzfI0D9K_uXEBUW/exec",
+          url: "https://script.google.com/macros/s/AKfycbwtymcGUKx7e6EKwUX7GQWhZl5lTcEP5qg6PjnW3seGvnb9E4g0qfSuHNx2OrycP7SaUw/exec",
         },
         {
           ids: ["osha"],
-          url: "https://script.google.com/macros/s/AKfycbwtymcGUKx7e6EKwUX7GQWhZl5lTcEP5qg6PjnW3seGvnb9E4g0qfSuHNx2OrycP7SaUw/exec",
+          url: "https://script.google.com/macros/s/AKfycbyMLK0vvT9NJZZXw58M5B_y74r5Vob4qSohx5ak_l8dpgVA-GdX4CzfI0D9K_uXEBUW/exec",
         },
       ];
       const forms = [
@@ -1254,21 +1254,28 @@
         }
         return "";
       }
+      async function fetchSheetEndpoint(endpoint) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+        try {
+          const response = await fetch(endpoint.url + "?t=" + Date.now(), {
+            cache: "no-store",
+            signal: controller.signal,
+          });
+          const json = await response.json();
+          if (!json.success)
+            throw new Error(json.error || "تعذر قراءة البيانات");
+          return { endpoint, json };
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      }
       async function loadAllSheets() {
         const syncMode = document.getElementById("syncMode");
         try {
           if (syncMode) syncMode.textContent = "● جارٍ مزامنة البيانات";
           const results = await Promise.allSettled(
-            SHEET_ENDPOINTS.map(async (endpoint) => {
-              const response = await fetch(
-                endpoint.url + "?t=" + Date.now(),
-                { cache: "no-store" },
-              );
-              const json = await response.json();
-              if (!json.success)
-                throw new Error(json.error || "تعذر قراءة البيانات");
-              return { endpoint, json };
-            }),
+            SHEET_ENDPOINTS.map(fetchSheetEndpoint),
           );
           const mergedForms = {};
           let connectedCount = 0;
