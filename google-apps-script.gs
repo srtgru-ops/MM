@@ -11,8 +11,14 @@ const SOURCES = {
     spreadsheetId: "1LD-MRidAsYIjj3ffuXi-SA1tIZRnpxaLo91X75VLOoQ",
     sheetName: "",
   },
-  pm: { spreadsheetId: "ضع_معرف_شيت_CBP_PM", sheetName: "" },
-  osha: { spreadsheetId: "ضع_معرف_شيت_OSHA", sheetName: "" },
+  pm: {
+    spreadsheetId: "1a324J6wB9vl9ptAXAQE02j0MccDbb1P98NL0rZ5NnWk",
+    sheetName: "",
+  },
+  osha: {
+    spreadsheetId: "1i5gBvULR4u4ZwCpZ0JdbB42Da3s5m1nMrgnGHwS6fZQ",
+    sheetName: "",
+  },
 };
 
 function doGet() {

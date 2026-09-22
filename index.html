@@ -693,8 +693,20 @@
       firebase.initializeApp(firebaseConfig);
       const firestoreDb = firebase.firestore();
       const trackingCollection = firestoreDb.collection("registrationTracking");
-      const API_URL =
-        "https://script.google.com/macros/s/AKfycbx3VEugrabHgJ6APu2tGJjiAQqNOSilq9l0s3NhvuVNmsxZ226fTE9PcCGaiGXoeaVU4w/exec";
+      const SHEET_ENDPOINTS = [
+        {
+          ids: ["free", "ibta"],
+          url: "https://script.google.com/macros/s/AKfycbx3VEugrabHgJ6APu2tGJjiAQqNOSilq9l0s3NhvuVNmsxZ226fTE9PcCGaiGXoeaVU4w/exec",
+        },
+        {
+          ids: ["pm"],
+          url: "https://script.google.com/macros/s/AKfycbyMLK0vvT9NJZZXw58M5B_y74r5Vob4qSohx5ak_l8dpgVA-GdX4CzfI0D9K_uXEBUW/exec",
+        },
+        {
+          ids: ["osha"],
+          url: "https://script.google.com/macros/s/AKfycbwtymcGUKx7e6EKwUX7GQWhZl5lTcEP5qg6PjnW3seGvnb9E4g0qfSuHNx2OrycP7SaUw/exec",
+        },
+      ];
       const forms = [
         {
           id: "free",
@@ -1246,15 +1258,38 @@
         const syncMode = document.getElementById("syncMode");
         try {
           if (syncMode) syncMode.textContent = "● جارٍ مزامنة البيانات";
-          const response = await fetch(API_URL + "?t=" + Date.now(), {
-            cache: "no-store",
+          const results = await Promise.allSettled(
+            SHEET_ENDPOINTS.map(async (endpoint) => {
+              const response = await fetch(
+                endpoint.url + "?t=" + Date.now(),
+                { cache: "no-store" },
+              );
+              const json = await response.json();
+              if (!json.success)
+                throw new Error(json.error || "تعذر قراءة البيانات");
+              return { endpoint, json };
+            }),
+          );
+          const mergedForms = {};
+          let connectedCount = 0;
+          Object.keys(sheetConnections).forEach(
+            (id) => (sheetConnections[id] = false),
+          );
+          results.forEach((result) => {
+            if (result.status !== "fulfilled") {
+              console.error("تعذر تحديث أحد الشيتات", result.reason);
+              return;
+            }
+            const { endpoint, json } = result.value;
+            endpoint.ids.forEach((id) => {
+              const isConnected = json.connections?.[id] === true;
+              sheetConnections[id] = isConnected;
+              if (isConnected) connectedCount += 1;
+              mergedForms[id] = json.forms?.[id] || [];
+            });
           });
-          const json = await response.json();
-          if (!json.success)
-            throw new Error(json.error || "تعذر قراءة البيانات");
           forms.forEach((form) => {
-            sheetConnections[form.id] = json.connections?.[form.id] === true;
-            const sourceRows = json.forms?.[form.id] || [];
+            const sourceRows = mergedForms[form.id] || [];
             const aliases =
               FIELD_ALIASES[form.id] || form.cols.map((col) => [col]);
             form.rows = sourceRows.map((record) =>
@@ -1263,7 +1298,12 @@
             form.count = form.rows.length;
           });
           updatePageConnectionStatuses();
-          if (syncMode) syncMode.textContent = "● متصل ومحدّث الآن";
+          if (!connectedCount) throw new Error("تعذر تحديث جميع الشيتات");
+          if (syncMode)
+            syncMode.textContent =
+              connectedCount === forms.length
+                ? "● متصل ومحدّث الآن"
+                : "● تم تحديث " + connectedCount + " من " + forms.length;
           refreshDashboard();
           return true;
         } catch (error) {
