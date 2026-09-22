@@ -15,18 +15,22 @@ const SOURCES = {
 function doGet() {
   try {
     const forms = {};
+    const connections = {};
     Object.keys(SOURCES).forEach(function (id) {
       const source = SOURCES[id];
       // يسمح بتوصيل النماذج بالتدريج، ويتجاوز المعرفات التي لم تُضف بعد.
       if (!source.spreadsheetId || source.spreadsheetId.indexOf("ضع_") === 0) {
         forms[id] = [];
+        connections[id] = false;
         return;
       }
       forms[id] = readSource_(source);
+      connections[id] = true;
     });
     return json_({
       success: true,
       forms: forms,
+      connections: connections,
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {

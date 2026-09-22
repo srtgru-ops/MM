@@ -841,6 +841,13 @@
           ],
         },
       ];
+      let firebaseConnected = null;
+      const sheetConnections = {
+        free: false,
+        ibta: false,
+        pm: false,
+        osha: false,
+      };
       const esc = (s) =>
         String(s ?? "").replace(
           /[&<>"']/g,
@@ -890,13 +897,13 @@
         summary.innerHTML = forms
           .map(
             (f) =>
-              `<tr><td>${esc(f.name)}</td><td><b>${f.count}</b></td><td>إدخال يدوي</td><td><span class="uni">جاهز للعرض</span></td></tr>`,
+              `<tr><td>${esc(f.name)}</td><td><b>${f.count}</b></td><td>Google Sheet</td><td><span class="uni">جارٍ التحقق</span></td></tr>`,
           )
           .join("");
         views.innerHTML = forms
           .map(
             (f) =>
-              `<section id="${f.id}" class="view"><div class="viewHero"><div><h1>${esc(f.name)}</h1><p>بيانات المسجلين في النموذج</p></div><div><div class="bigCount">${f.count} مسجل</div><div id="firebase-status-${f.id}" class="firebaseMode">● جارٍ فحص Firebase</div></div></div><div class="notice">هذا القسم مرتبط مباشرة بـ Google Sheets ويتم تحديثه تلقائيًا.</div><div class="miniStats"><div class="miniStat"><small>إجمالي المسجلين</small><b>${f.rows.length}</b></div><div class="miniStat"><small>جامعة الحدود الشمالية</small><b>${f.rows.filter((r) => r.join(" ").includes("جامعة الحدود الشمالية")).length}</b></div><div class="miniStat"><small>جامعة تبوك</small><b>${f.rows.filter((r) => r.join(" ").includes("جامعة تبوك")).length}</b></div></div><div class="panel"><div class="panelHead"><h2>المسجلون</h2><div class="tools"><input id="q-${f.id}" placeholder="بحث في البيانات" oninput="render('${f.id}')"><select id="u-${f.id}" onchange="render('${f.id}')"><option value="">كل الجامعات / الجهات</option><option>جامعة الحدود الشمالية</option><option>جامعة تبوك</option><option value="__other__">جامعات أخرى</option></select><button class="exportBtn" onclick="exportExcel('${f.id}')">⇩ تصدير Excel</button></div></div><div class="tableWrap"><table><thead><tr>${f.cols.map((c) => `<th>${esc(c)}</th>`).join("")}<th>حالة التواصل</th><th>طريقة الدفع</th><th>الملاحظات</th><th>حفظ</th></tr></thead><tbody id="b-${f.id}"></tbody></table></div></div></section>`,
+              `<section id="${f.id}" class="view"><div class="viewHero"><div><h1>${esc(f.name)}</h1><p>بيانات المسجلين في النموذج</p></div><div><div class="bigCount">${f.count} مسجل</div><div id="connection-status-${f.id}" class="firebaseMode">● جارٍ فحص الاتصال</div></div></div><div id="sheet-notice-${f.id}" class="notice">جارٍ التحقق من ربط Google Sheets...</div><div class="miniStats"><div class="miniStat"><small>إجمالي المسجلين</small><b>${f.rows.length}</b></div><div class="miniStat"><small>جامعة الحدود الشمالية</small><b>${f.rows.filter((r) => r.join(" ").includes("جامعة الحدود الشمالية")).length}</b></div><div class="miniStat"><small>جامعة تبوك</small><b>${f.rows.filter((r) => r.join(" ").includes("جامعة تبوك")).length}</b></div></div><div class="panel"><div class="panelHead"><h2>المسجلون</h2><div class="tools"><input id="q-${f.id}" placeholder="بحث في البيانات" oninput="render('${f.id}')"><select id="u-${f.id}" onchange="render('${f.id}')"><option value="">كل الجامعات / الجهات</option><option>جامعة الحدود الشمالية</option><option>جامعة تبوك</option><option value="__other__">جامعات أخرى</option></select><button class="exportBtn" onclick="exportExcel('${f.id}')">⇩ تصدير Excel</button></div></div><div class="tableWrap"><table><thead><tr>${f.cols.map((c) => `<th>${esc(c)}</th>`).join("")}<th>حالة التواصل</th><th>طريقة الدفع</th><th>الملاحظات</th><th>حفظ</th></tr></thead><tbody id="b-${f.id}"></tbody></table></div></div></section>`,
           )
           .join("");
         forms.forEach((f) => render(f.id));
@@ -968,12 +975,33 @@
           });
       }
       function setFirebaseStatus(connected) {
+        firebaseConnected = connected;
+        updatePageConnectionStatuses();
+      }
+      function updatePageConnectionStatuses() {
         forms.forEach((form) => {
-          const badge = document.getElementById("firebase-status-" + form.id);
+          const badge = document.getElementById("connection-status-" + form.id);
+          const notice = document.getElementById("sheet-notice-" + form.id);
           if (!badge) return;
-          badge.textContent = connected
-            ? "● متصل ومحدّث الآن"
-            : "● تعذر الاتصال بـ Firebase";
+          const sheetConnected = sheetConnections[form.id] === true;
+          let connected = false;
+          if (!sheetConnected) {
+            badge.textContent = "● لم يتم ربط Google Sheet";
+            if (notice)
+              notice.textContent = "لم تتم إضافة شيت هذا النموذج حتى الآن.";
+          } else if (firebaseConnected === false) {
+            badge.textContent = "● تعذر الاتصال بـ Firebase";
+            if (notice)
+              notice.textContent = "الشيت مربوط، لكن تعذر الاتصال بقاعدة Firebase.";
+          } else if (firebaseConnected === true) {
+            connected = true;
+            badge.textContent = "● متصل ومحدّث الآن";
+            if (notice)
+              notice.textContent =
+                "هذا القسم مرتبط مباشرة بـ Google Sheets ويتم تحديثه تلقائيًا.";
+          } else {
+            badge.textContent = "● جارٍ فحص Firebase";
+          }
           badge.classList.toggle("connected", connected);
           badge.classList.toggle("error", !connected);
         });
@@ -1225,6 +1253,7 @@
           if (!json.success)
             throw new Error(json.error || "تعذر قراءة البيانات");
           forms.forEach((form) => {
+            sheetConnections[form.id] = json.connections?.[form.id] === true;
             const sourceRows = json.forms?.[form.id] || [];
             const aliases =
               FIELD_ALIASES[form.id] || form.cols.map((col) => [col]);
@@ -1233,6 +1262,7 @@
             );
             form.count = form.rows.length;
           });
+          updatePageConnectionStatuses();
           if (syncMode) syncMode.textContent = "● متصل ومحدّث الآن";
           refreshDashboard();
           return true;
@@ -1265,7 +1295,7 @@
         summary.innerHTML = forms
           .map(
             (f) =>
-              `<tr><td>${esc(f.name)}</td><td><b>${f.rows.length}</b></td><td>Google Sheet مباشر</td><td><span class="uni">متصل تلقائيًا</span></td></tr>`,
+              `<tr><td>${esc(f.name)}</td><td><b>${f.rows.length}</b></td><td>Google Sheet</td><td><span class="uni">${sheetConnections[f.id] ? "متصل ومحدّث الآن" : "لم يتم ربط الشيت"}</span></td></tr>`,
           )
           .join("");
         forms.forEach((form) => {
